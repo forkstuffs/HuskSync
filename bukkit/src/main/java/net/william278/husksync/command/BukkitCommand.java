@@ -49,10 +49,12 @@ public class BukkitCommand implements CommandExecutor, TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if (sender instanceof Player player) {
+        if (sender instanceof Player) {
+            final var player = (Player) sender;
             this.command.onExecute(BukkitPlayer.adapt(player), args);
         } else {
-            if (this.command instanceof ConsoleExecutable consoleExecutable) {
+            if (this.command instanceof ConsoleExecutable) {
+                final var consoleExecutable = (ConsoleExecutable) this.command;
                 consoleExecutable.onConsoleExecute(args);
             } else {
                 plugin.getLocales().getLocale("error_in_game_command_only")
@@ -67,7 +69,8 @@ public class BukkitCommand implements CommandExecutor, TabExecutor {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                       @NotNull String alias, @NotNull String[] args) {
-        if (this.command instanceof TabCompletable tabCompletable) {
+        if (this.command instanceof TabCompletable) {
+            final var tabCompletable = (TabCompletable) this.command;
             return tabCompletable.onTabComplete(args);
         }
         return Collections.emptyList();

@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class MySqlDatabase extends Database {
 
@@ -121,10 +122,9 @@ public class MySqlDatabase extends Database {
                             if (!existingUser.username.equals(user.username)) {
                                 // Update a user's name if it has changed in the database
                                 try (Connection connection = getConnection()) {
-                                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                                            UPDATE `%users_table%`
-                                            SET `username`=?
-                                            WHERE `uuid`=?"""))) {
+                                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("UPDATE `%users_table%`\n" +
+                                                                                                                         "SET `username`=?\n" +
+                                                                                                                         "WHERE `uuid`=?"))) {
 
                                         statement.setString(1, user.username);
                                         statement.setString(2, existingUser.uuid.toString());
@@ -139,9 +139,8 @@ public class MySqlDatabase extends Database {
                         () -> {
                             // Insert new player data into the database
                             try (Connection connection = getConnection()) {
-                                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                                        INSERT INTO `%users_table%` (`uuid`,`username`)
-                                        VALUES (?,?);"""))) {
+                                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("INSERT INTO `%users_table%` (`uuid`,`username`)\n" +
+                                                                                                                     "VALUES (?,?);"))) {
 
                                     statement.setString(1, user.uuid.toString());
                                     statement.setString(2, user.username);
@@ -157,10 +156,9 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Optional<User>> getUser(@NotNull UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        SELECT `uuid`, `username`
-                        FROM `%users_table%`
-                        WHERE `uuid`=?"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("SELECT `uuid`, `username`\n" +
+                                                                                                     "FROM `%users_table%`\n" +
+                                                                                                     "WHERE `uuid`=?"))) {
 
                     statement.setString(1, uuid.toString());
 
@@ -181,10 +179,9 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Optional<User>> getUserByName(@NotNull String username) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        SELECT `uuid`, `username`
-                        FROM `%users_table%`
-                        WHERE `username`=?"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("SELECT `uuid`, `username`\n" +
+                                                                                                     "FROM `%users_table%`\n" +
+                                                                                                     "WHERE `username`=?"))) {
                     statement.setString(1, username);
 
                     final ResultSet resultSet = statement.executeQuery();
@@ -204,12 +201,11 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Optional<UserDataSnapshot>> getCurrentUserData(@NotNull User user) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`
-                        FROM `%user_data_table%`
-                        WHERE `player_uuid`=?
-                        ORDER BY `timestamp` DESC
-                        LIMIT 1;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`\n" +
+                                                                                                     "FROM `%user_data_table%`\n" +
+                                                                                                     "WHERE `player_uuid`=?\n" +
+                                                                                                     "ORDER BY `timestamp` DESC\n" +
+                                                                                                     "LIMIT 1;"))) {
                     statement.setString(1, user.uuid.toString());
                     final ResultSet resultSet = statement.executeQuery();
                     if (resultSet.next()) {
@@ -236,11 +232,10 @@ public class MySqlDatabase extends Database {
         return CompletableFuture.supplyAsync(() -> {
             final List<UserDataSnapshot> retrievedData = new ArrayList<>();
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`
-                        FROM `%user_data_table%`
-                        WHERE `player_uuid`=?
-                        ORDER BY `timestamp` DESC;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`\n" +
+                                                                                                     "FROM `%user_data_table%`\n" +
+                                                                                                     "WHERE `player_uuid`=?\n" +
+                                                                                                     "ORDER BY `timestamp` DESC;"))) {
                     statement.setString(1, user.uuid.toString());
                     final ResultSet resultSet = statement.executeQuery();
                     while (resultSet.next()) {
@@ -268,12 +263,11 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Optional<UserDataSnapshot>> getUserData(@NotNull User user, @NotNull UUID versionUuid) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`
-                        FROM `%user_data_table%`
-                        WHERE `player_uuid`=? AND `version_uuid`=?
-                        ORDER BY `timestamp` DESC
-                        LIMIT 1;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("SELECT `version_uuid`, `timestamp`, `save_cause`, `pinned`, `data`\n" +
+                                                                                                     "FROM `%user_data_table%`\n" +
+                                                                                                     "WHERE `player_uuid`=? AND `version_uuid`=?\n" +
+                                                                                                     "ORDER BY `timestamp` DESC\n" +
+                                                                                                     "LIMIT 1;"))) {
                     statement.setString(1, user.uuid.toString());
                     statement.setString(2, versionUuid.toString());
                     final ResultSet resultSet = statement.executeQuery();
@@ -300,15 +294,14 @@ public class MySqlDatabase extends Database {
     protected CompletableFuture<Void> rotateUserData(@NotNull User user) {
         return CompletableFuture.runAsync(() -> {
             final List<UserDataSnapshot> unpinnedUserData = getUserData(user).join().stream()
-                    .filter(dataSnapshot -> !dataSnapshot.pinned()).toList();
+                    .filter(dataSnapshot -> !dataSnapshot.pinned()).collect(Collectors.toList());
             if (unpinnedUserData.size() > plugin.getSettings().maxUserDataSnapshots) {
                 try (Connection connection = getConnection()) {
-                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                            DELETE FROM `%user_data_table%`
-                            WHERE `player_uuid`=?
-                            AND `pinned` IS FALSE
-                            ORDER BY `timestamp` ASC
-                            LIMIT %entry_count%;""".replace("%entry_count%",
+                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables(("DELETE FROM `%user_data_table%`\n" +
+                                                                                                          "WHERE `player_uuid`=?\n" +
+                                                                                                          "AND `pinned` IS FALSE\n" +
+                                                                                                          "ORDER BY `timestamp` ASC\n" +
+                                                                                                          "LIMIT %entry_count%;").replace("%entry_count%",
                             Integer.toString(unpinnedUserData.size() - plugin.getSettings().maxUserDataSnapshots))))) {
                         statement.setString(1, user.uuid.toString());
                         statement.executeUpdate();
@@ -324,10 +317,9 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Boolean> deleteUserData(@NotNull User user, @NotNull UUID versionUuid) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        DELETE FROM `%user_data_table%`
-                        WHERE `player_uuid`=? AND `version_uuid`=?
-                        LIMIT 1;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("DELETE FROM `%user_data_table%`\n" +
+                                                                                                     "WHERE `player_uuid`=? AND `version_uuid`=?\n" +
+                                                                                                     "LIMIT 1;"))) {
                     statement.setString(1, user.uuid.toString());
                     statement.setString(2, versionUuid.toString());
                     return statement.executeUpdate() > 0;
@@ -348,10 +340,9 @@ public class MySqlDatabase extends Database {
             if (!dataSaveEvent.isCancelled()) {
                 final UserData finalData = dataSaveEvent.getUserData();
                 try (Connection connection = getConnection()) {
-                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                            INSERT INTO `%user_data_table%`
-                            (`player_uuid`,`version_uuid`,`timestamp`,`save_cause`,`data`)
-                            VALUES (?,UUID(),NOW(),?,?);"""))) {
+                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("INSERT INTO `%user_data_table%`\n" +
+                                                                                                         "(`player_uuid`,`version_uuid`,`timestamp`,`save_cause`,`data`)\n" +
+                                                                                                         "VALUES (?,UUID(),NOW(),?,?);"))) {
                         statement.setString(1, user.uuid.toString());
                         statement.setString(2, saveCause.name());
                         statement.setBlob(3, new ByteArrayInputStream(
@@ -369,11 +360,10 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Void> pinUserData(@NotNull User user, @NotNull UUID versionUuid) {
         return CompletableFuture.runAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        UPDATE `%user_data_table%`
-                        SET `pinned`=TRUE
-                        WHERE `player_uuid`=? AND `version_uuid`=?
-                        LIMIT 1;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("UPDATE `%user_data_table%`\n" +
+                                                                                                     "SET `pinned`=TRUE\n" +
+                                                                                                     "WHERE `player_uuid`=? AND `version_uuid`=?\n" +
+                                                                                                     "LIMIT 1;"))) {
                     statement.setString(1, user.uuid.toString());
                     statement.setString(2, versionUuid.toString());
                     statement.executeUpdate();
@@ -388,11 +378,10 @@ public class MySqlDatabase extends Database {
     public CompletableFuture<Void> unpinUserData(@NotNull User user, @NotNull UUID versionUuid) {
         return CompletableFuture.runAsync(() -> {
             try (Connection connection = getConnection()) {
-                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("""
-                        UPDATE `%user_data_table%`
-                        SET `pinned`=FALSE
-                        WHERE `player_uuid`=? AND `version_uuid`=?
-                        LIMIT 1;"""))) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables("UPDATE `%user_data_table%`\n" +
+                                                                                                     "SET `pinned`=FALSE\n" +
+                                                                                                     "WHERE `player_uuid`=? AND `version_uuid`=?\n" +
+                                                                                                     "LIMIT 1;"))) {
                     statement.setString(1, user.uuid.toString());
                     statement.setString(2, versionUuid.toString());
                     statement.executeUpdate();

@@ -125,13 +125,19 @@ public abstract class EventListener {
     private void handleSynchronisationCompletion(@NotNull OnlineUser user, boolean succeeded) {
         if (succeeded) {
             switch (plugin.getSettings().notificationDisplaySlot) {
-                case CHAT -> plugin.getLocales().getLocale("synchronisation_complete")
+                case CHAT:
+                    plugin.getLocales().getLocale("synchronisation_complete")
                         .ifPresent(user::sendMessage);
-                case ACTION_BAR -> plugin.getLocales().getLocale("synchronisation_complete")
+                    break;
+                case ACTION_BAR:
+                    plugin.getLocales().getLocale("synchronisation_complete")
                         .ifPresent(user::sendActionBar);
-                case TOAST -> plugin.getLocales().getLocale("synchronisation_complete")
+                    break;
+                case TOAST:
+                    plugin.getLocales().getLocale("synchronisation_complete")
                         .ifPresent(locale -> user.sendToast(locale, new MineDown(""),
-                                "minecraft:bell", "TASK"));
+                            "minecraft:bell", "TASK"));
+                    break;
             }
             plugin.getDatabase().ensureUser(user).join();
             lockedPlayers.remove(user.uuid);

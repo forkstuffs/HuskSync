@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Flags for setting {@link StatusData}, indicating which elements should be synced
@@ -38,7 +39,7 @@ public enum StatusDataFlag {
     @Deprecated(since = "2.1")
     @SuppressWarnings("unused")
     public static List<StatusDataFlag> getAll() {
-        return Arrays.stream(StatusDataFlag.values()).toList();
+        return Arrays.stream(StatusDataFlag.values()).collect(Collectors.toList());
     }
 
     /**
@@ -52,7 +53,7 @@ public enum StatusDataFlag {
     @Deprecated(since = "2.1")
     public static List<StatusDataFlag> getFromSettings(@NotNull Settings settings) {
         return Arrays.stream(StatusDataFlag.values()).filter(
-                flag -> settings.getSynchronizationFeature(flag.feature)).toList();
+                flag -> settings.getSynchronizationFeature(flag.feature)).collect(Collectors.toList());
     }
 
 }

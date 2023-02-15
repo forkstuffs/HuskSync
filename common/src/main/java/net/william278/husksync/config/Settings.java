@@ -13,13 +13,12 @@ import java.util.Map;
 /**
  * Plugin settings, read from config.yml
  */
-@YamlFile(header = """
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃        HuskSync Config       ┃
-        ┃    Developed by William278   ┃
-        ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-        ┣╸ Information: https://william278.net/project/husksync
-        ┗╸ Documentation: https://william278.net/docs/husksync""",
+@YamlFile(header = "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n" +
+                   "┃        HuskSync Config       ┃\n" +
+                   "┃    Developed by William278   ┃\n" +
+                   "┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n" +
+                   "┣╸ Information: https://william278.net/project/husksync\n" +
+                   "┗╸ Documentation: https://william278.net/docs/husksync",
         versionField = "config_version", versionNumber = 3)
 public class Settings {
 

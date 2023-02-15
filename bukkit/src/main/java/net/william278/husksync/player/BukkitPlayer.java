@@ -307,41 +307,41 @@ public class BukkitPlayer extends OnlineUser {
 
             for (Statistic statistic : Statistic.values()) {
                 switch (statistic.getType()) {
-                    case ITEM -> {
+                    case ITEM:
                         final Map<String, Integer> itemValues = new HashMap<>();
                         Arrays.stream(Material.values()).filter(Material::isItem)
-                                .filter(itemMaterial -> (player.getStatistic(statistic, itemMaterial)) != 0)
-                                .forEach(itemMaterial -> itemValues.put(itemMaterial.name(),
-                                        player.getStatistic(statistic, itemMaterial)));
+                            .filter(itemMaterial -> (player.getStatistic(statistic, itemMaterial)) != 0)
+                            .forEach(itemMaterial -> itemValues.put(itemMaterial.name(),
+                                player.getStatistic(statistic, itemMaterial)));
                         if (!itemValues.isEmpty()) {
                             itemStatisticValues.put(statistic.name(), itemValues);
                         }
-                    }
-                    case BLOCK -> {
+                        break;
+                    case BLOCK:
                         final Map<String, Integer> blockValues = new HashMap<>();
                         Arrays.stream(Material.values()).filter(Material::isBlock)
-                                .filter(blockMaterial -> (player.getStatistic(statistic, blockMaterial)) != 0)
-                                .forEach(blockMaterial -> blockValues.put(blockMaterial.name(),
-                                        player.getStatistic(statistic, blockMaterial)));
+                            .filter(blockMaterial -> (player.getStatistic(statistic, blockMaterial)) != 0)
+                            .forEach(blockMaterial -> blockValues.put(blockMaterial.name(),
+                                player.getStatistic(statistic, blockMaterial)));
                         if (!blockValues.isEmpty()) {
                             blockStatisticValues.put(statistic.name(), blockValues);
                         }
-                    }
-                    case ENTITY -> {
+                        break;
+                    case ENTITY:
                         final Map<String, Integer> entityValues = new HashMap<>();
                         Arrays.stream(EntityType.values()).filter(EntityType::isAlive)
-                                .filter(entityType -> (player.getStatistic(statistic, entityType)) != 0)
-                                .forEach(entityType -> entityValues.put(entityType.name(),
-                                        player.getStatistic(statistic, entityType)));
+                            .filter(entityType -> (player.getStatistic(statistic, entityType)) != 0)
+                            .forEach(entityType -> entityValues.put(entityType.name(),
+                                player.getStatistic(statistic, entityType)));
                         if (!entityValues.isEmpty()) {
                             entityStatisticValues.put(statistic.name(), entityValues);
                         }
-                    }
-                    case UNTYPED -> {
+                        break;
+                    case UNTYPED:
                         if (player.getStatistic(statistic) != 0) {
                             untypedStatisticValues.put(statistic.name(), player.getStatistic(statistic));
                         }
-                    }
+                        break;
                 }
             }
 

@@ -104,7 +104,8 @@ public class BukkitEventListener extends EventListener implements BukkitJoinEven
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onProjectileLaunch(@NotNull ProjectileLaunchEvent event) {
         final Projectile projectile = event.getEntity();
-        if (projectile.getShooter() instanceof Player player && projectile.getType() == EntityType.TRIDENT) {
+        if (projectile.getShooter() instanceof Player && projectile.getType() == EntityType.TRIDENT) {
+            final var player = (Player) projectile.getShooter();
             event.setCancelled(cancelPlayerEvent(player.getUniqueId()));
         }
     }
@@ -116,8 +117,8 @@ public class BukkitEventListener extends EventListener implements BukkitJoinEven
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPickupItem(@NotNull EntityPickupItemEvent event) {
-        if (event.getEntity() instanceof Player player) {
-            event.setCancelled(cancelPlayerEvent(player.getUniqueId()));
+        if (event.getEntity() instanceof Player) {
+            event.setCancelled(cancelPlayerEvent(event.getEntity().getUniqueId()));
         }
     }
 
@@ -143,8 +144,8 @@ public class BukkitEventListener extends EventListener implements BukkitJoinEven
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryOpen(@NotNull InventoryOpenEvent event) {
-        if (event.getPlayer() instanceof Player player) {
-            event.setCancelled(cancelPlayerEvent(player.getUniqueId()));
+        if (event.getPlayer() instanceof Player) {
+            event.setCancelled(cancelPlayerEvent(event.getPlayer().getUniqueId()));
         }
     }
 
@@ -155,8 +156,8 @@ public class BukkitEventListener extends EventListener implements BukkitJoinEven
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerTakeDamage(@NotNull EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player player) {
-            event.setCancelled(cancelPlayerEvent(player.getUniqueId()));
+        if (event.getEntity() instanceof Player) {
+            event.setCancelled(cancelPlayerEvent(event.getEntity().getUniqueId()));
         }
     }
 

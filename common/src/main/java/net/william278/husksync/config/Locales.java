@@ -14,14 +14,13 @@ import java.util.Optional;
 /**
  * Loaded locales used by the plugin to display styled messages
  */
-@YamlFile(rootedMap = true, header = """
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃      HuskHomes Locales       ┃
-        ┃    Developed by William278   ┃
-        ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-        ┣╸ See plugin about menu for international locale credits
-        ┣╸ Formatted in MineDown: https://github.com/Phoenix616/MineDown
-        ┗╸ Translate HuskSync: https://william278.net/docs/husksync/Translations""")
+@YamlFile(rootedMap = true, header = "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n" +
+                                     "┃      HuskHomes Locales       ┃\n" +
+                                     "┃    Developed by William278   ┃\n" +
+                                     "┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n" +
+                                     "┣╸ See plugin about menu for international locale credits\n" +
+                                     "┣╸ Formatted in MineDown: https://github.com/Phoenix616/MineDown\n" +
+                                     "┗╸ Translate HuskSync: https://william278.net/docs/husksync/Translations")
 public class Locales {
 
     /**

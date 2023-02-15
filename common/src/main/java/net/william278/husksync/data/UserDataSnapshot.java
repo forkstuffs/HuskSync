@@ -7,22 +7,34 @@ import net.william278.husksync.player.User;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents a uniquely versioned and timestamped snapshot of a user's data, including why it was saved.
- *
- * @param versionUUID      The unique identifier for this user data version
- * @param versionTimestamp An epoch milliseconds timestamp of when this data was created
- * @param userData         The {@link UserData} that has been versioned
- * @param cause            The {@link DataSaveCause} that caused this data to be saved
  */
-public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionTimestamp,
-                               @NotNull DataSaveCause cause, boolean pinned,
-                               @NotNull UserData userData) implements Comparable<UserDataSnapshot> {
+public final class UserDataSnapshot implements Comparable<UserDataSnapshot> {
+    private final @NotNull UUID versionUUID;
+    private final @NotNull Date versionTimestamp;
+    private final @NotNull DataSaveCause cause;
+    private final boolean pinned;
+    private final @NotNull UserData userData;
+
+    /**
+     * @param versionUUID      The unique identifier for this user data version
+     * @param versionTimestamp An epoch milliseconds timestamp of when this data was created
+     * @param userData         The {@link UserData} that has been versioned
+     * @param cause            The {@link DataSaveCause} that caused this data to be saved
+     */
+    public UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionTimestamp,
+                            @NotNull DataSaveCause cause, boolean pinned,
+                            @NotNull UserData userData) {
+        this.versionUUID = versionUUID;
+        this.versionTimestamp = versionTimestamp;
+        this.cause = cause;
+        this.pinned = pinned;
+        this.userData = userData;
+    }
 
     /**
      * Version {@link UserData} into a {@link UserDataSnapshot}, assigning it a random {@link UUID} and the current timestamp {@link Date}
@@ -36,7 +48,7 @@ public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionT
      */
     public static UserDataSnapshot create(@NotNull UserData userData) {
         return new UserDataSnapshot(UUID.randomUUID(), new Date(),
-                DataSaveCause.API, false, userData);
+            DataSaveCause.API, false, userData);
     }
 
     /**
@@ -49,49 +61,49 @@ public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionT
     public void displayDataOverview(@NotNull OnlineUser user, @NotNull User dataOwner, @NotNull Locales locales) {
         // Title message, timestamp, owner and cause.
         locales.getLocale("data_manager_title", versionUUID().toString().split("-")[0],
-                        versionUUID().toString(), dataOwner.username, dataOwner.uuid.toString())
-                .ifPresent(user::sendMessage);
+                versionUUID().toString(), dataOwner.username, dataOwner.uuid.toString())
+            .ifPresent(user::sendMessage);
         locales.getLocale("data_manager_timestamp",
-                        new SimpleDateFormat("MMM dd yyyy, HH:mm:ss.sss").format(versionTimestamp()))
-                .ifPresent(user::sendMessage);
+                new SimpleDateFormat("MMM dd yyyy, HH:mm:ss.sss").format(versionTimestamp()))
+            .ifPresent(user::sendMessage);
         if (pinned()) {
             locales.getLocale("data_manager_pinned").ifPresent(user::sendMessage);
         }
         locales.getLocale("data_manager_cause", cause().name().toLowerCase().replaceAll("_", " "))
-                .ifPresent(user::sendMessage);
+            .ifPresent(user::sendMessage);
 
         // User status data, if present in the snapshot
         userData().getStatus()
-                .flatMap(statusData -> locales.getLocale("data_manager_status",
-                        Integer.toString((int) statusData.health),
-                        Integer.toString((int) statusData.maxHealth),
-                        Integer.toString(statusData.hunger),
-                        Integer.toString(statusData.expLevel),
-                        statusData.gameMode.toLowerCase()))
-                .ifPresent(user::sendMessage);
+            .flatMap(statusData -> locales.getLocale("data_manager_status",
+                Integer.toString((int) statusData.health),
+                Integer.toString((int) statusData.maxHealth),
+                Integer.toString(statusData.hunger),
+                Integer.toString(statusData.expLevel),
+                statusData.gameMode.toLowerCase()))
+            .ifPresent(user::sendMessage);
 
         // Advancement and statistic data, if both are present in the snapshot
         userData().getAdvancements()
-                .flatMap(advancementData -> userData().getStatistics()
-                        .flatMap(statisticsData -> locales.getLocale("data_manager_advancements_statistics",
-                                Integer.toString(advancementData.size()),
-                                generateAdvancementPreview(advancementData, locales),
-                                String.format("%.2f", (((statisticsData.untypedStatistics.getOrDefault(
-                                        "PLAY_ONE_MINUTE", 0)) / 20d) / 60d) / 60d))))
-                .ifPresent(user::sendMessage);
+            .flatMap(advancementData -> userData().getStatistics()
+                .flatMap(statisticsData -> locales.getLocale("data_manager_advancements_statistics",
+                    Integer.toString(advancementData.size()),
+                    generateAdvancementPreview(advancementData, locales),
+                    String.format("%.2f", (((statisticsData.untypedStatistics.getOrDefault(
+                        "PLAY_ONE_MINUTE", 0)) / 20d) / 60d) / 60d))))
+            .ifPresent(user::sendMessage);
 
         if (user.hasPermission(Permission.COMMAND_INVENTORY.node)
             && user.hasPermission(Permission.COMMAND_ENDER_CHEST.node)) {
             locales.getLocale("data_manager_item_buttons", dataOwner.username, versionUUID().toString())
-                    .ifPresent(user::sendMessage);
+                .ifPresent(user::sendMessage);
         }
         if (user.hasPermission(Permission.COMMAND_USER_DATA_MANAGE.node)) {
             locales.getLocale("data_manager_management_buttons", dataOwner.username, versionUUID().toString())
-                    .ifPresent(user::sendMessage);
+                .ifPresent(user::sendMessage);
         }
         if (user.hasPermission(Permission.COMMAND_USER_DATA_DUMP.node)) {
             locales.getLocale("data_manager_system_buttons", dataOwner.username, versionUUID().toString())
-                    .ifPresent(user::sendMessage);
+                .ifPresent(user::sendMessage);
         }
     }
 
@@ -99,7 +111,7 @@ public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionT
     private String generateAdvancementPreview(@NotNull List<AdvancementData> advancementData, @NotNull Locales locales) {
         final StringJoiner joiner = new StringJoiner("\n");
         final List<AdvancementData> advancementsToPreview = advancementData.stream().filter(dataItem ->
-                !dataItem.key.startsWith("minecraft:recipes/")).toList();
+            !dataItem.key.startsWith("minecraft:recipes/")).collect(Collectors.toList());
         final int PREVIEW_SIZE = 8;
         for (int i = 0; i < advancementsToPreview.size(); i++) {
             joiner.add(advancementsToPreview.get(i).key);
@@ -110,7 +122,7 @@ public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionT
         final int remainingAdvancements = advancementsToPreview.size() - PREVIEW_SIZE;
         if (remainingAdvancements > 0) {
             joiner.add(locales.getRawLocale("data_manager_advancements_preview_remaining",
-                    Integer.toString(remainingAdvancements)).orElse("+" + remainingAdvancements + "…"));
+                Integer.toString(remainingAdvancements)).orElse("+" + remainingAdvancements + "…"));
         }
         return joiner.toString();
     }
@@ -125,5 +137,53 @@ public record UserDataSnapshot(@NotNull UUID versionUUID, @NotNull Date versionT
     public int compareTo(@NotNull UserDataSnapshot other) {
         return Long.compare(this.versionTimestamp.getTime(), other.versionTimestamp.getTime());
     }
+
+    public @NotNull UUID versionUUID() {
+        return versionUUID;
+    }
+
+    public @NotNull Date versionTimestamp() {
+        return versionTimestamp;
+    }
+
+    public @NotNull DataSaveCause cause() {
+        return cause;
+    }
+
+    public boolean pinned() {
+        return pinned;
+    }
+
+    public @NotNull UserData userData() {
+        return userData;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (UserDataSnapshot) obj;
+        return Objects.equals(this.versionUUID, that.versionUUID) &&
+               Objects.equals(this.versionTimestamp, that.versionTimestamp) &&
+               Objects.equals(this.cause, that.cause) &&
+               this.pinned == that.pinned &&
+               Objects.equals(this.userData, that.userData);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(versionUUID, versionTimestamp, cause, pinned, userData);
+    }
+
+    @Override
+    public String toString() {
+        return "UserDataSnapshot[" +
+               "versionUUID=" + versionUUID + ", " +
+               "versionTimestamp=" + versionTimestamp + ", " +
+               "cause=" + cause + ", " +
+               "pinned=" + pinned + ", " +
+               "userData=" + userData + ']';
+    }
+
 
 }

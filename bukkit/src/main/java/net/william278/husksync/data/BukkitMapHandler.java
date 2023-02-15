@@ -187,12 +187,15 @@ public class BukkitMapHandler {
 
         @NotNull
         private String getDimension() {
-            return mapView.getWorld() == null ? "minecraft:overworld"
-                    : switch (mapView.getWorld().getEnvironment()) {
-                case NETHER -> "minecraft:the_nether";
-                case THE_END -> "minecraft:the_end";
-                default -> "minecraft:overworld";
-            };
+            if (mapView.getWorld() == null) return "minecraft:overworld";
+            switch (mapView.getWorld().getEnvironment()) {
+                case NETHER:
+                    return "minecraft:the_nether";
+                case THE_END:
+                    return "minecraft:the_end";
+                default:
+                    return "minecraft:overworld";
+            }
         }
 
         /**

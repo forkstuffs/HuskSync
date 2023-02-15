@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class LegacyMigrator extends Migrator {
 
@@ -71,13 +72,11 @@ public class LegacyMigrator extends Migrator {
                 plugin.log(Level.INFO, "Downloading raw data from the legacy database (this might take a while)...");
                 final List<LegacyData> dataToMigrate = new ArrayList<>();
                 try (final Connection connection = connectionPool.getConnection()) {
-                    try (final PreparedStatement statement = connection.prepareStatement("""
-                            SELECT `uuid`, `username`, `inventory`, `ender_chest`, `health`, `max_health`, `health_scale`, `hunger`, `saturation`, `saturation_exhaustion`, `selected_slot`, `status_effects`, `total_experience`, `exp_level`, `exp_progress`, `game_mode`, `statistics`, `is_flying`, `advancements`, `location`
-                            FROM `%source_players_table%`
-                            INNER JOIN `%source_data_table%`
-                            ON `%source_players_table%`.`id` = `%source_data_table%`.`player_id`
-                            WHERE `username` IS NOT NULL;
-                            """.replaceAll(Pattern.quote("%source_players_table%"), sourcePlayersTable)
+                    try (final PreparedStatement statement = connection.prepareStatement(("SELECT `uuid`, `username`, `inventory`, `ender_chest`, `health`, `max_health`, `health_scale`, `hunger`, `saturation`, `saturation_exhaustion`, `selected_slot`, `status_effects`, `total_experience`, `exp_level`, `exp_progress`, `game_mode`, `statistics`, `is_flying`, `advancements`, `location`\n" +
+                                                                                          "FROM `%source_players_table%`\n" +
+                                                                                          "INNER JOIN `%source_data_table%`\n" +
+                                                                                          "ON `%source_players_table%`.`id` = `%source_data_table%`.`player_id`\n" +
+                                                                                          "WHERE `username` IS NOT NULL;\n").replaceAll(Pattern.quote("%source_players_table%"), sourcePlayersTable)
                             .replaceAll(Pattern.quote("%source_data_table%"), sourceDataTable))) {
                         try (final ResultSet resultSet = statement.executeQuery()) {
                             int playersMigrated = 0;
@@ -141,41 +140,46 @@ public class LegacyMigrator extends Migrator {
     @Override
     public void handleConfigurationCommand(@NotNull String[] args) {
         if (args.length == 2) {
-            if (switch (args[0].toLowerCase()) {
-                case "host" -> {
+            boolean b;
+            switch (args[0].toLowerCase()) {
+                case "host":
                     this.sourceHost = args[1];
-                    yield true;
-                }
-                case "port" -> {
+                    b = true;
+                    break;
+                case "port":
                     try {
                         this.sourcePort = Integer.parseInt(args[1]);
-                        yield true;
+                        b = true;
+                        break;
                     } catch (NumberFormatException e) {
-                        yield false;
+                        b = false;
+                        break;
                     }
-                }
-                case "username" -> {
+                case "username":
                     this.sourceUsername = args[1];
-                    yield true;
-                }
-                case "password" -> {
+                    b = true;
+                    break;
+                case "password":
                     this.sourcePassword = args[1];
-                    yield true;
-                }
-                case "database" -> {
+                    b = true;
+                    break;
+                case "database":
                     this.sourceDatabase = args[1];
-                    yield true;
-                }
-                case "players_table" -> {
+                    b = true;
+                    break;
+                case "players_table":
                     this.sourcePlayersTable = args[1];
-                    yield true;
-                }
-                case "data_table" -> {
+                    b = true;
+                    break;
+                case "data_table":
                     this.sourceDataTable = args[1];
-                    yield true;
-                }
-                default -> false;
-            }) {
+                    b = true;
+                    break;
+                default:
+                    b = false;
+                    break;
+            }
+            if (b) {
                 plugin.log(Level.INFO, getHelpMenu());
                 plugin.log(Level.INFO, "Successfully set " + args[0] + " to " +
                                                            obfuscateDataString(args[1]));
@@ -203,44 +207,42 @@ public class LegacyMigrator extends Migrator {
     @NotNull
     @Override
     public String getHelpMenu() {
-        return """
-                === HuskSync v1.x --> v2.x Migration Wizard =========
-                This will migrate all user data from HuskSync v1.x to
-                HuskSync v2.x's new format. To perform the migration,
-                please follow the steps below carefully.
-                                
-                [!] Existing data in the database will be wiped. [!]
-                                
-                STEP 1] Please ensure no players are on any servers.
-                                
-                STEP 2] HuskSync will need to connect to the database
-                used to hold the existing, legacy HuskSync data.
-                If this is the same database as the one you are
-                currently using, you probably don't need to change
-                anything.
-                Please check that the credentials below are the
-                correct credentials of the source legacy HuskSync
-                database.
-                - host: %source_host%
-                - port: %source_port%
-                - username: %source_username%
-                - password: %source_password%
-                - database: %source_database%
-                - players_table: %source_players_table%
-                - data_table: %source_data_table%
-                If any of these are not correct, please correct them
-                using the command:
-                "husksync migrate legacy set <parameter> <value>"
-                (e.g.: "husksync migrate legacy set host 1.2.3.4")
-                                
-                STEP 3] HuskSync will migrate data into the database
-                tables configures in the config.yml file of this
-                server. Please make sure you're happy with this
-                before proceeding.
-                                
-                STEP 4] To start the migration, please run:
-                "husksync migrate legacy start"
-                """.replaceAll(Pattern.quote("%source_host%"), obfuscateDataString(sourceHost))
+        return ("=== HuskSync v1.x --> v2.x Migration Wizard =========\n" +
+                "This will migrate all user data from HuskSync v1.x to\n" +
+                "HuskSync v2.x's new format. To perform the migration,\n" +
+                "please follow the steps below carefully.\n" +
+                "\n" +
+                "[!] Existing data in the database will be wiped. [!]\n" +
+                "\n" +
+                "STEP 1] Please ensure no players are on any servers.\n" +
+                "\n" +
+                "STEP 2] HuskSync will need to connect to the database\n" +
+                "used to hold the existing, legacy HuskSync data.\n" +
+                "If this is the same database as the one you are\n" +
+                "currently using, you probably don't need to change\n" +
+                "anything.\n" +
+                "Please check that the credentials below are the\n" +
+                "correct credentials of the source legacy HuskSync\n" +
+                "database.\n" +
+                "- host: %source_host%\n" +
+                "- port: %source_port%\n" +
+                "- username: %source_username%\n" +
+                "- password: %source_password%\n" +
+                "- database: %source_database%\n" +
+                "- players_table: %source_players_table%\n" +
+                "- data_table: %source_data_table%\n" +
+                "If any of these are not correct, please correct them\n" +
+                "using the command:\n" +
+                "\"husksync migrate legacy set <parameter> <value>\"\n" +
+                "(e.g.: \"husksync migrate legacy set host 1.2.3.4\")\n" +
+                "\n" +
+                "STEP 3] HuskSync will migrate data into the database\n" +
+                "tables configures in the config.yml file of this\n" +
+                "server. Please make sure you're happy with this\n" +
+                "before proceeding.\n" +
+                "\n" +
+                "STEP 4] To start the migration, please run:\n" +
+                "\"husksync migrate legacy start\"\n").replaceAll(Pattern.quote("%source_host%"), obfuscateDataString(sourceHost))
                 .replaceAll(Pattern.quote("%source_port%"), Integer.toString(sourcePort))
                 .replaceAll(Pattern.quote("%source_username%"), obfuscateDataString(sourceUsername))
                 .replaceAll(Pattern.quote("%source_password%"), obfuscateDataString(sourcePassword))
@@ -249,34 +251,83 @@ public class LegacyMigrator extends Migrator {
                 .replaceAll(Pattern.quote("%source_data_table%"), sourceDataTable);
     }
 
-    private record LegacyData(@NotNull User user,
-                              @NotNull String serializedInventory, @NotNull String serializedEnderChest,
-                              double health, double maxHealth, double healthScale, int hunger, float saturation,
-                              float saturationExhaustion, int selectedSlot, @NotNull String serializedPotionEffects,
-                              int totalExp, int expLevel, float expProgress,
-                              @NotNull String gameMode, @NotNull String serializedStatistics, boolean isFlying,
-                              @NotNull String serializedAdvancements, @NotNull String serializedLocation) {
-
+    private static final class LegacyData {
         @NotNull
-        public CompletableFuture<UserData> toUserData(@NotNull HSLConverter converter,
-                                                      @NotNull String minecraftVersion) {
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    final DataSerializer.StatisticData legacyStatisticData = converter
+        private final User user;
+        @NotNull
+        private final String serializedInventory;
+        @NotNull
+        private final String serializedEnderChest;
+        private final double health;
+        private final double maxHealth;
+        private final double healthScale;
+        private final int hunger;
+        private final float saturation;
+        private final float saturationExhaustion;
+        private final int selectedSlot;
+        @NotNull
+        private final String serializedPotionEffects;
+        private final int totalExp;
+        private final int expLevel;
+        private final float expProgress;
+        @NotNull
+        private final String gameMode;
+        @NotNull
+        private final String serializedStatistics;
+        private final boolean isFlying;
+        @NotNull
+        private final String serializedAdvancements;
+        @NotNull
+        private final String serializedLocation;
+
+        private LegacyData(@NotNull User user,
+                           @NotNull String serializedInventory, @NotNull String serializedEnderChest,
+                           double health, double maxHealth, double healthScale, int hunger, float saturation,
+                           float saturationExhaustion, int selectedSlot, @NotNull String serializedPotionEffects,
+                           int totalExp, int expLevel, float expProgress,
+                           @NotNull String gameMode, @NotNull String serializedStatistics, boolean isFlying,
+                           @NotNull String serializedAdvancements, @NotNull String serializedLocation) {
+            this.user = user;
+            this.serializedInventory = serializedInventory;
+            this.serializedEnderChest = serializedEnderChest;
+            this.health = health;
+            this.maxHealth = maxHealth;
+            this.healthScale = healthScale;
+            this.hunger = hunger;
+            this.saturation = saturation;
+            this.saturationExhaustion = saturationExhaustion;
+            this.selectedSlot = selectedSlot;
+            this.serializedPotionEffects = serializedPotionEffects;
+            this.totalExp = totalExp;
+            this.expLevel = expLevel;
+            this.expProgress = expProgress;
+            this.gameMode = gameMode;
+            this.serializedStatistics = serializedStatistics;
+            this.isFlying = isFlying;
+            this.serializedAdvancements = serializedAdvancements;
+            this.serializedLocation = serializedLocation;
+        }
+
+            @NotNull
+            public CompletableFuture<UserData> toUserData(@NotNull HSLConverter converter,
+                                                          @NotNull String minecraftVersion) {
+                return CompletableFuture.supplyAsync(() -> {
+                    try {
+                        final DataSerializer.StatisticData legacyStatisticData = converter
                             .deserializeStatisticData(serializedStatistics);
-                    final StatisticsData convertedStatisticData = new StatisticsData(
+                        final StatisticsData convertedStatisticData = new StatisticsData(
                             convertStatisticMap(legacyStatisticData.untypedStatisticValues()),
                             convertMaterialStatisticMap(legacyStatisticData.blockStatisticValues()),
                             convertMaterialStatisticMap(legacyStatisticData.itemStatisticValues()),
                             convertEntityStatisticMap(legacyStatisticData.entityStatisticValues()));
 
-                    final List<AdvancementData> convertedAdvancements = converter
+                        final List<AdvancementData> convertedAdvancements = converter
                             .deserializeAdvancementData(serializedAdvancements)
-                            .stream().map(data -> new AdvancementData(data.key(), data.criteriaMap())).toList();
+                            .stream().map(data -> new AdvancementData(data.key(), data.criteriaMap())).collect(Collectors.toList());
 
-                    final DataSerializer.PlayerLocation legacyLocationData = converter
+                        final DataSerializer.PlayerLocation legacyLocationData = converter
                             .deserializePlayerLocationData(serializedLocation);
-                    final LocationData convertedLocationData = new LocationData(
+                        final LocationData convertedLocationData = new LocationData(
                             legacyLocationData == null ? "world" : legacyLocationData.worldName(),
                             UUID.randomUUID(),
                             "NORMAL",
@@ -286,9 +337,9 @@ public class LegacyMigrator extends Migrator {
                             legacyLocationData == null ? 90f : legacyLocationData.yaw(),
                             legacyLocationData == null ? 180f : legacyLocationData.pitch());
 
-                    return UserData.builder(minecraftVersion)
+                        return UserData.builder(minecraftVersion)
                             .setStatus(new StatusData(health, maxHealth, healthScale, hunger, saturation,
-                                    saturationExhaustion, selectedSlot, totalExp, expLevel, expProgress, gameMode, isFlying))
+                                saturationExhaustion, selectedSlot, totalExp, expLevel, expProgress, gameMode, isFlying))
                             .setInventory(new ItemData(serializedInventory))
                             .setEnderChest(new ItemData(serializedEnderChest))
                             .setPotionEffects(new PotionEffectData(serializedPotionEffects))
@@ -296,42 +347,182 @@ public class LegacyMigrator extends Migrator {
                             .setStatistics(convertedStatisticData)
                             .setLocation(convertedLocationData)
                             .build();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-
-        private Map<String, Integer> convertStatisticMap(@NotNull HashMap<Statistic, Integer> rawMap) {
-            final HashMap<String, Integer> convertedMap = new HashMap<>();
-            for (Map.Entry<Statistic, Integer> entry : rawMap.entrySet()) {
-                convertedMap.put(entry.getKey().toString(), entry.getValue());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
-            return convertedMap;
-        }
 
-        private Map<String, Map<String, Integer>> convertMaterialStatisticMap(@NotNull HashMap<Statistic, HashMap<Material, Integer>> rawMap) {
-            final Map<String, Map<String, Integer>> convertedMap = new HashMap<>();
-            for (Map.Entry<Statistic, HashMap<Material, Integer>> entry : rawMap.entrySet()) {
-                for (Map.Entry<Material, Integer> materialEntry : entry.getValue().entrySet()) {
-                    convertedMap.computeIfAbsent(entry.getKey().toString(), k -> new HashMap<>())
+            private Map<String, Integer> convertStatisticMap(@NotNull HashMap<Statistic, Integer> rawMap) {
+                final HashMap<String, Integer> convertedMap = new HashMap<>();
+                for (Map.Entry<Statistic, Integer> entry : rawMap.entrySet()) {
+                    convertedMap.put(entry.getKey().toString(), entry.getValue());
+                }
+                return convertedMap;
+            }
+
+            private Map<String, Map<String, Integer>> convertMaterialStatisticMap(@NotNull HashMap<Statistic, HashMap<Material, Integer>> rawMap) {
+                final Map<String, Map<String, Integer>> convertedMap = new HashMap<>();
+                for (Map.Entry<Statistic, HashMap<Material, Integer>> entry : rawMap.entrySet()) {
+                    for (Map.Entry<Material, Integer> materialEntry : entry.getValue().entrySet()) {
+                        convertedMap.computeIfAbsent(entry.getKey().toString(), k -> new HashMap<>())
                             .put(materialEntry.getKey().toString(), materialEntry.getValue());
+                    }
                 }
+                return convertedMap;
             }
-            return convertedMap;
-        }
 
-        private Map<String, Map<String, Integer>> convertEntityStatisticMap(@NotNull HashMap<Statistic, HashMap<EntityType, Integer>> rawMap) {
-            final Map<String, Map<String, Integer>> convertedMap = new HashMap<>();
-            for (Map.Entry<Statistic, HashMap<EntityType, Integer>> entry : rawMap.entrySet()) {
-                for (Map.Entry<EntityType, Integer> materialEntry : entry.getValue().entrySet()) {
-                    convertedMap.computeIfAbsent(entry.getKey().toString(), k -> new HashMap<>())
+            private Map<String, Map<String, Integer>> convertEntityStatisticMap(@NotNull HashMap<Statistic, HashMap<EntityType, Integer>> rawMap) {
+                final Map<String, Map<String, Integer>> convertedMap = new HashMap<>();
+                for (Map.Entry<Statistic, HashMap<EntityType, Integer>> entry : rawMap.entrySet()) {
+                    for (Map.Entry<EntityType, Integer> materialEntry : entry.getValue().entrySet()) {
+                        convertedMap.computeIfAbsent(entry.getKey().toString(), k -> new HashMap<>())
                             .put(materialEntry.getKey().toString(), materialEntry.getValue());
+                    }
                 }
+                return convertedMap;
             }
-            return convertedMap;
+
+        @NotNull
+        public User user() {
+            return user;
         }
 
-    }
+        @NotNull
+        public String serializedInventory() {
+            return serializedInventory;
+        }
+
+        @NotNull
+        public String serializedEnderChest() {
+            return serializedEnderChest;
+        }
+
+        public double health() {
+            return health;
+        }
+
+        public double maxHealth() {
+            return maxHealth;
+        }
+
+        public double healthScale() {
+            return healthScale;
+        }
+
+        public int hunger() {
+            return hunger;
+        }
+
+        public float saturation() {
+            return saturation;
+        }
+
+        public float saturationExhaustion() {
+            return saturationExhaustion;
+        }
+
+        public int selectedSlot() {
+            return selectedSlot;
+        }
+
+        @NotNull
+        public String serializedPotionEffects() {
+            return serializedPotionEffects;
+        }
+
+        public int totalExp() {
+            return totalExp;
+        }
+
+        public int expLevel() {
+            return expLevel;
+        }
+
+        public float expProgress() {
+            return expProgress;
+        }
+
+        @NotNull
+        public String gameMode() {
+            return gameMode;
+        }
+
+        @NotNull
+        public String serializedStatistics() {
+            return serializedStatistics;
+        }
+
+        public boolean isFlying() {
+            return isFlying;
+        }
+
+        @NotNull
+        public String serializedAdvancements() {
+            return serializedAdvancements;
+        }
+
+        @NotNull
+        public String serializedLocation() {
+            return serializedLocation;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (LegacyData) obj;
+            return Objects.equals(this.user, that.user) &&
+                   Objects.equals(this.serializedInventory, that.serializedInventory) &&
+                   Objects.equals(this.serializedEnderChest, that.serializedEnderChest) &&
+                   Double.doubleToLongBits(this.health) == Double.doubleToLongBits(that.health) &&
+                   Double.doubleToLongBits(this.maxHealth) == Double.doubleToLongBits(that.maxHealth) &&
+                   Double.doubleToLongBits(this.healthScale) == Double.doubleToLongBits(that.healthScale) &&
+                   this.hunger == that.hunger &&
+                   Float.floatToIntBits(this.saturation) == Float.floatToIntBits(that.saturation) &&
+                   Float.floatToIntBits(this.saturationExhaustion) == Float.floatToIntBits(that.saturationExhaustion) &&
+                   this.selectedSlot == that.selectedSlot &&
+                   Objects.equals(this.serializedPotionEffects, that.serializedPotionEffects) &&
+                   this.totalExp == that.totalExp &&
+                   this.expLevel == that.expLevel &&
+                   Float.floatToIntBits(this.expProgress) == Float.floatToIntBits(that.expProgress) &&
+                   Objects.equals(this.gameMode, that.gameMode) &&
+                   Objects.equals(this.serializedStatistics, that.serializedStatistics) &&
+                   this.isFlying == that.isFlying &&
+                   Objects.equals(this.serializedAdvancements, that.serializedAdvancements) &&
+                   Objects.equals(this.serializedLocation, that.serializedLocation);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(user, serializedInventory, serializedEnderChest, health, maxHealth, healthScale, hunger, saturation, saturationExhaustion, selectedSlot, serializedPotionEffects, totalExp, expLevel, expProgress, gameMode, serializedStatistics, isFlying, serializedAdvancements, serializedLocation);
+        }
+
+        @Override
+        public String toString() {
+            return "LegacyData[" +
+                   "user=" + user + ", " +
+                   "serializedInventory=" + serializedInventory + ", " +
+                   "serializedEnderChest=" + serializedEnderChest + ", " +
+                   "health=" + health + ", " +
+                   "maxHealth=" + maxHealth + ", " +
+                   "healthScale=" + healthScale + ", " +
+                   "hunger=" + hunger + ", " +
+                   "saturation=" + saturation + ", " +
+                   "saturationExhaustion=" + saturationExhaustion + ", " +
+                   "selectedSlot=" + selectedSlot + ", " +
+                   "serializedPotionEffects=" + serializedPotionEffects + ", " +
+                   "totalExp=" + totalExp + ", " +
+                   "expLevel=" + expLevel + ", " +
+                   "expProgress=" + expProgress + ", " +
+                   "gameMode=" + gameMode + ", " +
+                   "serializedStatistics=" + serializedStatistics + ", " +
+                   "isFlying=" + isFlying + ", " +
+                   "serializedAdvancements=" + serializedAdvancements + ", " +
+                   "serializedLocation=" + serializedLocation + ']';
+        }
+
+
+        }
 
 }

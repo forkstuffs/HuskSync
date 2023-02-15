@@ -26,7 +26,8 @@ public class User {
 
     @Override
     public boolean equals(Object object) {
-        if (object instanceof User other) {
+        if (object instanceof User) {
+            final var other = (User) object;
             return this.uuid.equals(other.uuid);
         }
         return super.equals(object);

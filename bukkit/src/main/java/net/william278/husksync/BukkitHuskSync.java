@@ -48,6 +48,7 @@ public class BukkitHuskSync extends JavaPlugin implements HuskSync {
      * Metrics ID for <a href="https://bstats.org/plugin/bukkit/HuskSync%20-%20Bukkit/13140">HuskSync on Bukkit</a>.
      */
     private static final int METRICS_ID = 13140;
+    private static BukkitHuskSync instance;
     private Database database;
     private RedisManager redisManager;
     private EventListener eventListener;
@@ -56,9 +57,7 @@ public class BukkitHuskSync extends JavaPlugin implements HuskSync {
     private Settings settings;
     private Locales locales;
     private List<Migrator> availableMigrators;
-
     private BukkitAudiences audiences;
-    private static BukkitHuskSync instance;
 
     /**
      * (<b>Internal use only)</b> Returns the instance of the implementing Bukkit plugin
@@ -138,12 +137,22 @@ public class BukkitHuskSync extends JavaPlugin implements HuskSync {
 
             // Register permissions
             log(Level.INFO, "Registering permissions & commands...");
-            Arrays.stream(Permission.values()).forEach(permission -> getServer().getPluginManager()
-                    .addPermission(new org.bukkit.permissions.Permission(permission.node, switch (permission.defaultAccess) {
-                        case EVERYONE -> PermissionDefault.TRUE;
-                        case NOBODY -> PermissionDefault.FALSE;
-                        case OPERATORS -> PermissionDefault.OP;
-                    })));
+            Arrays.stream(Permission.values()).forEach(permission -> {
+                final PermissionDefault permissionDefault;
+                switch (permission.defaultAccess) {
+                    case NOBODY:
+                        permissionDefault = PermissionDefault.FALSE;
+                        break;
+                    case OPERATORS:
+                        permissionDefault = PermissionDefault.OP;
+                        break;
+                    default:
+                    case EVERYONE:
+                        permissionDefault = PermissionDefault.TRUE;
+                        break;
+                }
+                getServer().getPluginManager().addPermission(new org.bukkit.permissions.Permission(permission.node, permissionDefault));
+            });
 
             // Register commands
             for (final BukkitCommandType bukkitCommandType : BukkitCommandType.values()) {
@@ -172,24 +181,22 @@ public class BukkitHuskSync extends JavaPlugin implements HuskSync {
             if (settings.checkForUpdates) {
                 log(Level.INFO, "Checking for updates...");
                 getLatestVersionIfOutdated().thenAccept(newestVersion ->
-                        newestVersion.ifPresent(newVersion -> log(Level.WARNING,
-                                "An update is available for HuskSync, v" + newVersion
-                                + " (Currently running v" + getPluginVersion() + ")")));
+                    newestVersion.ifPresent(newVersion -> log(Level.WARNING,
+                        "An update is available for HuskSync, v" + newVersion
+                        + " (Currently running v" + getPluginVersion() + ")")));
             }
         } catch (HuskSyncInitializationException exception) {
-            log(Level.SEVERE, """
-                    ***************************************************
-                               
-                              Failed to initialize HuskSync!
-                               
-                    ***************************************************
-                    The plugin was disabled due to an error. Please check
-                    the logs below for details.
-                    No user data will be synchronised.
-                    ***************************************************
-                    Caused by: %error_message%
-                    """
-                    .replaceAll("%error_message%", exception.getMessage()));
+            log(Level.SEVERE, ("***************************************************\n" +
+                               "\n" +
+                               "          Failed to initialize HuskSync!\n" +
+                               "\n" +
+                               "***************************************************\n" +
+                               "The plugin was disabled due to an error. Please check\n" +
+                               "the logs below for details.\n" +
+                               "No user data will be synchronised.\n" +
+                               "***************************************************\n" +
+                               "Caused by: %error_message%\n")
+                .replaceAll("%error_message%", exception.getMessage()));
             initialized.set(false);
         } catch (Exception exception) {
             log(Level.SEVERE, "An unhandled exception occurred initializing HuskSync!", exception);
@@ -304,9 +311,9 @@ public class BukkitHuskSync extends JavaPlugin implements HuskSync {
 
                 // Load locales from language preset default
                 final Locales languagePresets = Annotaml.create(Locales.class,
-                        Objects.requireNonNull(getResource("locales/" + settings.language + ".yml"))).get();
+                    Objects.requireNonNull(getResource("locales/" + settings.language + ".yml"))).get();
                 this.locales = Annotaml.create(new File(getDataFolder(), "messages_" + settings.language + ".yml"),
-                        languagePresets).get();
+                    languagePresets).get();
                 return true;
             } catch (IOException | NullPointerException | InvocationTargetException | IllegalAccessException |
                      InstantiationException e) {

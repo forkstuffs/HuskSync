@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Represents a chat-viewable paginated list of {@link UserDataSnapshot}s
@@ -35,7 +36,7 @@ public class DataSnapshotList {
                                         snapshot.cause().getDisplayName(),
                                         dataOwner.username,
                                         snapshot.pinned() ? "※" : "  ")
-                                .orElse("• " + snapshot.versionUUID())).toList(),
+                                .orElse("• " + snapshot.versionUUID())).collect(Collectors.toList()),
                 locales.getBaseChatList(6)
                         .setHeaderFormat(locales.getRawLocale("data_list_title", dataOwner.username,
                                         "%first_item_on_page_index%", "%last_item_on_page_index%", "%total_items%")

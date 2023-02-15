@@ -92,13 +92,19 @@ public class RedisManager extends JedisPubSub {
             user.setData(userData, plugin).thenAccept(succeeded -> {
                 if (succeeded) {
                     switch (plugin.getSettings().notificationDisplaySlot) {
-                        case CHAT -> plugin.getLocales().getLocale("data_update_complete")
+                        case CHAT:
+                            plugin.getLocales().getLocale("data_update_complete")
                                 .ifPresent(user::sendMessage);
-                        case ACTION_BAR -> plugin.getLocales().getLocale("data_update_complete")
+                            break;
+                        case ACTION_BAR:
+                            plugin.getLocales().getLocale("data_update_complete")
                                 .ifPresent(user::sendActionBar);
-                        case TOAST -> plugin.getLocales().getLocale("data_update_complete")
+                            break;
+                        case TOAST:
+                            plugin.getLocales().getLocale("data_update_complete")
                                 .ifPresent(locale -> user.sendToast(locale, new MineDown(""),
-                                        "minecraft:bell", "TASK"));
+                                    "minecraft:bell", "TASK"));
+                            break;
                     }
                     plugin.getEventCannon().fireSyncCompleteEvent(user);
                 } else {

@@ -58,8 +58,10 @@ subprojects {
     version rootProject.version
     archivesBaseName = "${rootProject.name}-${project.name.capitalize()}"
 
-    if (['bukkit', 'plugin'].contains(project.name)) {
+    if (['bukkit'].contains(project.name)) {
         shadowJar {
+            mergeServiceFiles()
+
             destinationDirectory.set(file("$rootDir/target"))
             archiveClassifier.set('')
         }

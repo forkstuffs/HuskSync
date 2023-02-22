@@ -47,4 +47,8 @@ shadowJar {
     relocate 'net.william278.mpdbconverter', 'net.william278.husksync.libraries.mpdbconverter'
     relocate 'net.william278.hslmigrator', 'net.william278.husksync.libraries.hslconverter'
     relocate 'net.william278.annotaml', 'net.william278.husksync.libraries.annotaml'
+    relocate 'redis.clients.jedis', 'net.william278.husksync.libraries.redis'
+    relocate 'com.mysql', 'net.william278.husksync.libraries.mysql'
+    relocate 'org.sqlite', 'net.william278.husksync.libraries.sqlite'
+    relocate 'org.apache.commons.pool2', 'net.william278.husksync.libraries.pool2'
 }

@@ -53,17 +53,17 @@ public class MySqlDatabase extends Database {
     public MySqlDatabase(@NotNull HuskSync plugin) {
         super(plugin);
         final Settings settings = plugin.getSettings();
-        this.mySqlHost = settings.mySqlHost;
-        this.mySqlPort = settings.mySqlPort;
-        this.mySqlDatabaseName = settings.mySqlDatabase;
-        this.mySqlUsername = settings.mySqlUsername;
-        this.mySqlPassword = settings.mySqlPassword;
-        this.mySqlConnectionParameters = settings.mySqlConnectionParameters;
-        this.hikariMaximumPoolSize = settings.mySqlConnectionPoolSize;
-        this.hikariMinimumIdle = settings.mySqlConnectionPoolIdle;
-        this.hikariMaximumLifetime = settings.mySqlConnectionPoolLifetime;
-        this.hikariKeepAliveTime = settings.mySqlConnectionPoolKeepAlive;
-        this.hikariConnectionTimeOut = settings.mySqlConnectionPoolTimeout;
+        this.mySqlHost = settings.getMySqlHost();
+        this.mySqlPort = settings.getMySqlPort();
+        this.mySqlDatabaseName = settings.getMySqlDatabase();
+        this.mySqlUsername = settings.getMySqlUsername();
+        this.mySqlPassword = settings.getMySqlPassword();
+        this.mySqlConnectionParameters = settings.getMySqlConnectionParameters();
+        this.hikariMaximumPoolSize = settings.getMySqlConnectionPoolSize();
+        this.hikariMinimumIdle = settings.getMySqlConnectionPoolIdle();
+        this.hikariMaximumLifetime = settings.getMySqlConnectionPoolLifetime();
+        this.hikariKeepAliveTime = settings.getMySqlConnectionPoolKeepAlive();
+        this.hikariConnectionTimeOut = settings.getMySqlConnectionPoolTimeout();
     }
 
     /**
@@ -291,26 +291,24 @@ public class MySqlDatabase extends Database {
     }
 
     @Override
-    protected CompletableFuture<Void> rotateUserData(@NotNull User user) {
-        return CompletableFuture.runAsync(() -> {
-            final List<UserDataSnapshot> unpinnedUserData = getUserData(user).join().stream()
-                    .filter(dataSnapshot -> !dataSnapshot.pinned()).collect(Collectors.toList());
-            if (unpinnedUserData.size() > plugin.getSettings().maxUserDataSnapshots) {
-                try (Connection connection = getConnection()) {
-                    try (PreparedStatement statement = connection.prepareStatement(formatStatementTables(("DELETE FROM `%user_data_table%`\n" +
-                                                                                                          "WHERE `player_uuid`=?\n" +
-                                                                                                          "AND `pinned` IS FALSE\n" +
-                                                                                                          "ORDER BY `timestamp` ASC\n" +
-                                                                                                          "LIMIT %entry_count%;").replace("%entry_count%",
-                            Integer.toString(unpinnedUserData.size() - plugin.getSettings().maxUserDataSnapshots))))) {
-                        statement.setString(1, user.uuid.toString());
-                        statement.executeUpdate();
-                    }
-                } catch (SQLException e) {
-                    plugin.log(Level.SEVERE, "Failed to prune user data from the database", e);
+    protected void rotateUserData(@NotNull User user) {
+        final List<UserDataSnapshot> unpinnedUserData = getUserData(user).join().stream()
+                .filter(dataSnapshot -> !dataSnapshot.pinned()).collect(Collectors.toList());
+        if (unpinnedUserData.size() > plugin.getSettings().getMaxUserDataSnapshots()) {
+            try (Connection connection = getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(formatStatementTables(("DELETE FROM `%user_data_table%`\n" +
+                                                                                                      "WHERE `player_uuid`=?\n" +
+                                                                                                      "AND `pinned` IS FALSE\n" +
+                                                                                                      "ORDER BY `timestamp` ASC\n" +
+                                                                                                      "LIMIT %entry_count%;").replace("%entry_count%",
+                        Integer.toString(unpinnedUserData.size() - plugin.getSettings().getMaxUserDataSnapshots()))))) {
+                    statement.setString(1, user.uuid.toString());
+                    statement.executeUpdate();
                 }
+            } catch (SQLException e) {
+                plugin.log(Level.SEVERE, "Failed to prune user data from the database", e);
             }
-        });
+        }
     }
 
     @Override
@@ -353,7 +351,8 @@ public class MySqlDatabase extends Database {
                     plugin.log(Level.SEVERE, "Failed to set user data in the database", e);
                 }
             }
-        }).thenRun(() -> rotateUserData(user).join());
+            this.rotateUserData(user);
+        });
     }
 
     @Override

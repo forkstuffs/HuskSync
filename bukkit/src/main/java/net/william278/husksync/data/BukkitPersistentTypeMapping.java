@@ -40,8 +40,8 @@ public final class BukkitPersistentTypeMapping<T, Z> {
     }
 
     public void setContainerValue(@NotNull PersistentDataContainerData container, @NotNull Player player, @NotNull NamespacedKey key) throws NullPointerException {
-        container.getTagValue(key.toString(), bukkitType.getPrimitiveType())
-            .ifPresent(value -> player.getPersistentDataContainer().set(key, bukkitType, (Z) value));
+        container.getTagValue(key.toString(), bukkitType.getComplexType())
+            .ifPresent(value -> player.getPersistentDataContainer().set(key, bukkitType, value));
     }
 
     public static Optional<BukkitPersistentTypeMapping<?, ?>> getMapping(@NotNull PersistentDataTagType type) {

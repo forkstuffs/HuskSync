@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'org.ajoberstar.grgit' version '5.0.0'
@@ -15,8 +17,6 @@ ext {
     set 'snappy_version', snappy_version.toString()
     set 'commons_text_version', commons_text_version.toString()
 }
-
-import org.apache.tools.ant.filters.ReplaceTokens
 
 allprojects {
     apply plugin: 'com.github.johnrengelman.shadow'
